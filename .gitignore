@@ -2,6 +2,10 @@
 .env
 .env.local
 
+# Test
+test/*.g.dart
+test/*.mocks.dart
+
 # Miscellaneous
 *.class
 *.log
