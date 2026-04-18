@@ -98,6 +98,46 @@ class QueueManager {
   }
 }
 
+class SleepTimer {
+  final Duration duration;
+  final bool isActive;
+  DateTime? _endTime;
+
+  SleepTimer({
+    required this.duration,
+    this.isActive = false,
+  });
+
+  void start() {
+    _endTime = DateTime.now().add(duration);
+  }
+
+  bool get isTimeUp => isActive && DateTime.now().isAfter(_endTime!);
+
+  String get formattedRemaining {
+    if (!isActive || _endTime == null) {
+      final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+      final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+      return '$minutes:$seconds';
+    }
+    
+    final remaining = _endTime!.difference(DateTime.now());
+    if (remaining.isNegative) return '00:00';
+    
+    final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  SleepTimer activate() {
+    final timer = SleepTimer(duration: duration, isActive: true);
+    timer.start();
+    return timer;
+  }
+
+  SleepTimer deactivate() => SleepTimer(duration: duration, isActive: false);
+}
+
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayerRepository _audioPlayer;
   Track? _currentTrack;
@@ -107,6 +147,7 @@ class PlayerProvider extends ChangeNotifier {
   PlayHistory _history = const PlayHistory();
   FavoritesManager _favorites = const FavoritesManager();
   QueueManager _queue = const QueueManager();
+  SleepTimer? _sleepTimer;
   int _currentIndex = 0;
   Duration _position = Duration.zero;
   Duration? _duration;
@@ -145,6 +186,8 @@ class PlayerProvider extends ChangeNotifier {
   int get favoriteCount => _favorites.favoriteCount;
   List<Track> get queue => _queue.queue;
   int get queueCount => _queue.queueCount;
+  bool get isSleepTimerActive => _sleepTimer?.isActive ?? false;
+  String get sleepTimerRemaining => _sleepTimer?.formattedRemaining ?? '';
   bool get currentTrackIsFavorite => _currentTrack != null && _favorites.isFavorite(_currentTrack!.id);
   int get currentIndex => _currentIndex;
   bool get isShuffleEnabled => _isShuffleEnabled;
@@ -303,6 +346,24 @@ class PlayerProvider extends ChangeNotifier {
 
   void clearQueue() {
     _queue = _queue.clearQueue();
+    notifyListeners();
+  }
+
+  void setSleepTimer(int minutes) {
+    _sleepTimer = SleepTimer(duration: Duration(minutes: minutes)).activate();
+    notifyListeners();
+    
+    Future.delayed(Duration(minutes: minutes), () {
+      if (_sleepTimer?.isTimeUp ?? false) {
+        pause();
+        _sleepTimer = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  void cancelSleepTimer() {
+    _sleepTimer = null;
     notifyListeners();
   }
 
