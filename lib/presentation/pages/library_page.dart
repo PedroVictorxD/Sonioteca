@@ -42,6 +42,38 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
       appBar: AppBar(
         title: const Text('Biblioteca'),
         actions: [
+          Builder(
+            builder: (context) => PopupMenuButton<SortOption>(
+              icon: const Icon(Icons.sort),
+              onSelected: (option) => context.read<MusicLibraryProvider>().setSort(option),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: SortOption.titleAsc,
+                  child: Text('Título (A-Z)'),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.titleDesc,
+                  child: Text('Título (Z-A)'),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.artistAsc,
+                  child: Text('Artista (A-Z)'),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.artistDesc,
+                  child: Text('Artista (Z-A)'),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.albumAsc,
+                  child: Text('Álbum (A-Z)'),
+                ),
+                const PopupMenuItem(
+                  value: SortOption.albumDesc,
+                  child: Text('Álbum (Z-A)'),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => context.read<MusicLibraryProvider>().loadLibrary(),
