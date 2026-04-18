@@ -6,11 +6,15 @@ import '../theme/app_theme.dart';
 class TrackTile extends StatelessWidget {
   final Track track;
   final VoidCallback onTap;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
 
   const TrackTile({
     super.key,
     required this.track,
     required this.onTap,
+    this.isFavorite = false,
+    this.onFavoriteToggle,
   });
 
   @override
@@ -29,7 +33,20 @@ class TrackTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: const Icon(Icons.play_arrow, color: AppColors.primary),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onFavoriteToggle != null)
+            IconButton(
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : Colors.grey,
+              ),
+              onPressed: onFavoriteToggle,
+            ),
+          const Icon(Icons.play_arrow, color: AppColors.primary),
+        ],
+      ),
       onTap: onTap,
     );
   }

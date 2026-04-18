@@ -5,6 +5,38 @@ import '../../data/services/audio_player_service.dart';
 
 enum RepeatMode { none, all, one }
 
+class FavoritesManager {
+  final List<Track> favorites;
+  
+  const FavoritesManager({this.favorites = const []});
+  
+  FavoritesManager addFavorite(Track track) {
+    if (favorites.any((t) => t.id == track.id)) {
+      return this;
+    }
+    return FavoritesManager(favorites: [...favorites, track]);
+  }
+  
+  FavoritesManager removeFavorite(String trackId) {
+    return FavoritesManager(
+      favorites: favorites.where((t) => t.id != trackId).toList(),
+    );
+  }
+  
+  bool isFavorite(String trackId) => favorites.any((t) => t.id == trackId);
+  
+  FavoritesManager clearFavorites() => const FavoritesManager();
+  
+  int get favoriteCount => favorites.length;
+  
+  FavoritesManager toggleFavorite(Track track) {
+    if (isFavorite(track.id)) {
+      return removeFavorite(track.id);
+    }
+    return addFavorite(track);
+  }
+}
+
 class PlayHistory {
   final List<Track> tracks;
   
@@ -32,8 +64,9 @@ class PlayerProvider extends ChangeNotifier {
   Track? _currentTrack;
   List<Track> _playlist = [];
   List<Track> _originalPlaylist = [];
-  List<Playlist> _playlists = [];
+  final List<Playlist> _playlists = [];
   PlayHistory _history = const PlayHistory();
+  FavoritesManager _favorites = const FavoritesManager();
   int _currentIndex = 0;
   Duration _position = Duration.zero;
   Duration? _duration;
@@ -68,6 +101,9 @@ class PlayerProvider extends ChangeNotifier {
   List<Track> get playlist => _playlist;
   List<Playlist> get playlists => _playlists;
   List<Track> get recentHistory => _history.getRecent(10);
+  List<Track> get favorites => _favorites.favorites;
+  int get favoriteCount => _favorites.favoriteCount;
+  bool get currentTrackIsFavorite => _currentTrack != null && _favorites.isFavorite(_currentTrack!.id);
   int get currentIndex => _currentIndex;
   bool get isShuffleEnabled => _isShuffleEnabled;
   RepeatMode get repeatMode => _repeatMode;
@@ -169,6 +205,23 @@ class PlayerProvider extends ChangeNotifier {
     others.shuffle();
     
     return [currentTrack, ...others];
+  }
+
+  void toggleFavorite() {
+    if (_currentTrack != null) {
+      _favorites = _favorites.toggleFavorite(_currentTrack!);
+      notifyListeners();
+    }
+  }
+
+  void addToFavorites(Track track) {
+    _favorites = _favorites.addFavorite(track);
+    notifyListeners();
+  }
+
+  void removeFromFavorites(String trackId) {
+    _favorites = _favorites.removeFavorite(trackId);
+    notifyListeners();
   }
 
   void createPlaylist(Playlist playlist) {

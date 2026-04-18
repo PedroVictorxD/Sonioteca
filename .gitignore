@@ -2,6 +2,9 @@
 .env
 .env.local
 
+# Docs
+ROADMAP.md
+
 # Test
 test/*.g.dart
 test/*.mocks.dart

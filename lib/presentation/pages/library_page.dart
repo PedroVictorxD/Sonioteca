@@ -23,7 +23,7 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MusicLibraryProvider>().loadLibrary();
     });
@@ -85,6 +85,7 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
             Tab(text: 'Músicas'),
             Tab(text: 'Álbuns'),
             Tab(text: 'Playlists'),
+            Tab(text: 'Favoritos'),
             Tab(text: 'Histórico'),
           ],
         ),
@@ -169,6 +170,7 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
                     _buildTracksTab(library),
                     const AlbumsPage(),
                     const PlaylistsPage(),
+                    _buildFavoritesTab(),
                     _buildHistoryTab(),
                   ],
                 ),
@@ -177,6 +179,42 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFavoritesTab() {
+    return Consumer<PlayerProvider>(
+      builder: (context, player, child) {
+        final favorites = player.favorites;
+        
+        if (favorites.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Nenhum favorito ainda', style: TextStyle(fontSize: 16)),
+                SizedBox(height: 8),
+                Text('Toque no coração para adicionar', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: favorites.length,
+          itemBuilder: (context, index) {
+            final track = favorites[index];
+            return TrackTile(
+              track: track,
+              onTap: () {
+                player.playTrack(track, playlist: favorites, index: index);
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -221,46 +259,59 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
         ? library.tracks
         : _searchTracks(library.tracks, _searchQuery);
 
-    if (tracks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _searchQuery.isEmpty ? Icons.music_off : Icons.search_off,
-              size: 64,
-              color: Colors.grey,
+    return Consumer<PlayerProvider>(
+      builder: (context, player, child) {
+        if (tracks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _searchQuery.isEmpty ? Icons.music_off : Icons.search_off,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _searchQuery.isEmpty
+                      ? 'Nenhuma música encontrada'
+                      : 'Nenhum resultado para "$_searchQuery"',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                if (_searchQuery.isEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Adicione arquivos MP3 na pasta Music',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'Nenhuma música encontrada'
-                  : 'Nenhum resultado para "$_searchQuery"',
-              style: const TextStyle(fontSize: 16),
-            ),
-            if (_searchQuery.isEmpty) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'Adicione arquivos MP3 na pasta Music',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ],
-        ),
-      );
-    }
+          );
+        }
 
-    return ListView.builder(
-      itemCount: tracks.length,
-      itemBuilder: (context, index) {
-        final track = tracks[index];
-        return TrackTile(
-          track: track,
-          onTap: () {
-            context.read<PlayerProvider>().playTrack(
-              track,
-              playlist: tracks,
-              index: index,
+        return ListView.builder(
+          itemCount: tracks.length,
+          itemBuilder: (context, index) {
+            final track = tracks[index];
+            final isFavorite = player.favorites.any((t) => t.id == track.id);
+            return TrackTile(
+              track: track,
+              isFavorite: isFavorite,
+              onFavoriteToggle: () {
+                if (isFavorite) {
+                  player.removeFromFavorites(track.id);
+                } else {
+                  player.addToFavorites(track);
+                }
+              },
+              onTap: () {
+                player.playTrack(
+                  track,
+                  playlist: tracks,
+                  index: index,
+                );
+              },
             );
           },
         );
