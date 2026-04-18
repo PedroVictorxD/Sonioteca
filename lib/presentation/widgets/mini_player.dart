@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/player_provider.dart';
@@ -40,15 +41,7 @@ class MiniPlayer extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[700],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(Icons.music_note, color: Colors.white54),
-                ),
+                _buildAlbumArt(player.currentTrack!.albumArt),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -88,6 +81,34 @@ class MiniPlayer extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAlbumArt(String? albumArtPath) {
+    if (albumArtPath != null && File(albumArtPath).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          File(albumArtPath),
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+        ),
+      );
+    }
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.grey[700],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Icon(Icons.music_note, color: Colors.white54),
     );
   }
 }

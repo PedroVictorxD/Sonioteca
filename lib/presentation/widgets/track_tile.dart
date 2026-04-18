@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../domain/entities/track.dart';
 import '../theme/app_theme.dart';
@@ -15,15 +16,7 @@ class TrackTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.grey[800],
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: const Icon(Icons.music_note, color: Colors.white54),
-      ),
+      leading: _buildAlbumArt(),
       title: Text(
         track.title,
         style: const TextStyle(fontWeight: FontWeight.w500),
@@ -38,6 +31,34 @@ class TrackTile extends StatelessWidget {
       ),
       trailing: const Icon(Icons.play_arrow, color: AppColors.primary),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildAlbumArt() {
+    if (track.albumArt != null && File(track.albumArt!).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          File(track.albumArt!),
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+        ),
+      );
+    }
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Icon(Icons.music_note, color: Colors.white54),
     );
   }
 }

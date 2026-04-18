@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../domain/entities/track.dart';
 
@@ -29,7 +30,7 @@ class PlayerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reproduzindo'),
+        title: Text(track?.album ?? 'Reproduzindo'),
         leading: IconButton(
           icon: const Icon(Icons.keyboard_arrow_down),
           onPressed: () => Navigator.pop(context),
@@ -42,18 +43,9 @@ class PlayerPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 280,
-                    height: 280,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.music_note,
-                      size: 120,
-                      color: Colors.white54,
-                    ),
+                  Expanded(
+                    flex: 3,
+                    child: _buildAlbumArt(),
                   ),
                   const SizedBox(height: 32),
                   Text(
@@ -74,10 +66,20 @@ class PlayerPage extends StatelessWidget {
                       color: Colors.grey[400],
                     ),
                   ),
+                  if (track!.album != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      track!.album!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 32),
                   Slider(
                     value: position.inSeconds.toDouble(),
-                    max: (duration?.inSeconds ?? 0).toDouble(),
+                    max: (duration?.inSeconds ?? 0).toDouble().clamp(1, double.infinity),
                     onChanged: (value) => onSeek(Duration(seconds: value.toInt())),
                   ),
                   Row(
@@ -111,6 +113,36 @@ class PlayerPage extends StatelessWidget {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildAlbumArt() {
+    if (track?.albumArt != null && File(track!.albumArt!).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(track!.albumArt!),
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+        ),
+      );
+    }
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.album,
+          size: 120,
+          color: Colors.white54,
+        ),
+      ),
     );
   }
 

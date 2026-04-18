@@ -7,6 +7,7 @@ class PlayerProvider extends ChangeNotifier {
   final AudioPlayerRepository _audioPlayer;
   Track? _currentTrack;
   List<Track> _playlist = [];
+  List<Playlist> _playlists = [];
   int _currentIndex = 0;
   Duration _position = Duration.zero;
   Duration? _duration;
@@ -37,6 +38,7 @@ class PlayerProvider extends ChangeNotifier {
   Duration get position => _position;
   Duration? get duration => _duration;
   List<Track> get playlist => _playlist;
+  List<Playlist> get playlists => _playlists;
   int get currentIndex => _currentIndex;
 
   Future<void> playTrack(Track track, {List<Track>? playlist, int? index}) async {
@@ -73,6 +75,24 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<void> seek(Duration position) async {
     await _audioPlayer.seek(position);
+  }
+
+  void createPlaylist(Playlist playlist) {
+    _playlists.add(playlist);
+    notifyListeners();
+  }
+
+  void deletePlaylist(String id) {
+    _playlists.removeWhere((p) => p.id == id);
+    notifyListeners();
+  }
+
+  void addTrackToPlaylist(String playlistId, Track track) {
+    final index = _playlists.indexWhere((p) => p.id == playlistId);
+    if (index != -1) {
+      _playlists[index] = _playlists[index].addTrack(track);
+      notifyListeners();
+    }
   }
 
   @override
