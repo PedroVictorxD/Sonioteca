@@ -5,12 +5,35 @@ import '../../data/services/audio_player_service.dart';
 
 enum RepeatMode { none, all, one }
 
+class PlayHistory {
+  final List<Track> tracks;
+  
+  const PlayHistory({this.tracks = const []});
+  
+  PlayHistory addTrack(Track track) {
+    if (tracks.isNotEmpty && tracks.first.id == track.id) {
+      return this;
+    }
+    
+    final newTracks = [track, ...tracks];
+    if (newTracks.length > 50) {
+      return PlayHistory(tracks: newTracks.take(50).toList());
+    }
+    return PlayHistory(tracks: newTracks);
+  }
+  
+  PlayHistory clear() => const PlayHistory();
+  
+  List<Track> getRecent(int count) => tracks.take(count).toList();
+}
+
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayerRepository _audioPlayer;
   Track? _currentTrack;
   List<Track> _playlist = [];
   List<Track> _originalPlaylist = [];
   List<Playlist> _playlists = [];
+  PlayHistory _history = const PlayHistory();
   int _currentIndex = 0;
   Duration _position = Duration.zero;
   Duration? _duration;
@@ -44,6 +67,7 @@ class PlayerProvider extends ChangeNotifier {
   Duration? get duration => _duration;
   List<Track> get playlist => _playlist;
   List<Playlist> get playlists => _playlists;
+  List<Track> get recentHistory => _history.getRecent(10);
   int get currentIndex => _currentIndex;
   bool get isShuffleEnabled => _isShuffleEnabled;
   RepeatMode get repeatMode => _repeatMode;
@@ -60,6 +84,7 @@ class PlayerProvider extends ChangeNotifier {
       }
     }
     _currentTrack = track;
+    _history = _history.addTrack(track);
     await _audioPlayer.play(track);
     notifyListeners();
   }

@@ -23,7 +23,7 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MusicLibraryProvider>().loadLibrary();
     });
@@ -85,6 +85,7 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
             Tab(text: 'Músicas'),
             Tab(text: 'Álbuns'),
             Tab(text: 'Playlists'),
+            Tab(text: 'Histórico'),
           ],
         ),
       ),
@@ -168,6 +169,7 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
                     _buildTracksTab(library),
                     const AlbumsPage(),
                     const PlaylistsPage(),
+                    _buildHistoryTab(),
                   ],
                 ),
               ),
@@ -175,6 +177,42 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
           );
         },
       ),
+    );
+  }
+
+  Widget _buildHistoryTab() {
+    return Consumer<PlayerProvider>(
+      builder: (context, player, child) {
+        final history = player.recentHistory;
+        
+        if (history.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Nenhum histórico ainda', style: TextStyle(fontSize: 16)),
+                SizedBox(height: 8),
+                Text('As músicas tocadas aparecerão aqui', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: history.length,
+          itemBuilder: (context, index) {
+            final track = history[index];
+            return TrackTile(
+              track: track,
+              onTap: () {
+                player.playTrack(track, playlist: history, index: index);
+              },
+            );
+          },
+        );
+      },
     );
   }
 
