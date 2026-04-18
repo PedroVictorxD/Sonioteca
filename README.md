@@ -1,16 +1,42 @@
-# sonioteca
+# Sonioteca
 
-A new Flutter project.
+App Flutter estilo Spotify para ouvir e organizar arquivos MP3 locais.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Leitura de arquivos MP3 do dispositivo
+- Player de música com controles (play, pause, next, previous, seek)
+- Interface com tema dark
+- Mini player e página de player completa
+- Estrutura Clean Architecture
+- Testes unitários
 
-A few resources to get you started if this is your first Flutter project:
+## Tecnologias
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Flutter
+- Provider (state management)
+- just_audio (reprodução de áudio)
+- permission_handler (permissões)
+- Clean Architecture
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Estrutura
+
+```
+lib/
+├── domain/        # Camada de domínio (entities, repositories interfaces)
+├── data/          # Camada de dados (repositories implementations, datasources)
+└── presentation/  # Camada de apresentação (pages, widgets, providers)
+```
+
+## Como executar
+
+```bash
+flutter pub get
+flutter run
+```
+
+## GitFlow
+
+- `main` - Branch de produção
+- `develop` - Branch de integração
+- `feature/*` - Features em desenvolvimento
