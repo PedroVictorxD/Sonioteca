@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'presentation/theme/app_theme.dart';
+import 'presentation/providers/music_library_provider.dart';
 import 'presentation/providers/player_provider.dart';
 import 'presentation/pages/library_page.dart';
 import 'presentation/widgets/mini_player.dart';
@@ -14,8 +15,11 @@ class SoniotecaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => PlayerProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MusicLibraryProvider()),
+        ChangeNotifierProvider(create: (_) => PlayerProvider()),
+      ],
       child: MaterialApp(
         title: 'Sonioteca',
         theme: AppTheme.darkTheme,
