@@ -1,16 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../domain/entities/track.dart';
+import '../providers/player_provider.dart';
 
 class PlayerPage extends StatelessWidget {
   final Track? track;
   final bool isPlaying;
   final Duration position;
   final Duration? duration;
+  final bool isShuffleEnabled;
+  final RepeatMode repeatMode;
   final VoidCallback onPlay;
   final VoidCallback onPause;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
+  final VoidCallback onToggleShuffle;
+  final VoidCallback onToggleRepeat;
   final ValueChanged<Duration> onSeek;
 
   const PlayerPage({
@@ -19,10 +24,14 @@ class PlayerPage extends StatelessWidget {
     this.isPlaying = false,
     this.position = Duration.zero,
     this.duration,
+    this.isShuffleEnabled = false,
+    this.repeatMode = RepeatMode.none,
     required this.onPlay,
     required this.onPause,
     required this.onNext,
     required this.onPrevious,
+    required this.onToggleShuffle,
+    required this.onToggleRepeat,
     required this.onSeek,
   });
 
@@ -94,6 +103,13 @@ class PlayerPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
+                        icon: Icon(
+                          Icons.shuffle,
+                          color: isShuffleEnabled ? Colors.green : Colors.grey,
+                        ),
+                        onPressed: onToggleShuffle,
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.skip_previous, size: 36),
                         onPressed: onPrevious,
                       ),
@@ -108,12 +124,35 @@ class PlayerPage extends StatelessWidget {
                         icon: const Icon(Icons.skip_next, size: 36),
                         onPressed: onNext,
                       ),
+                      IconButton(
+                        icon: Icon(
+                          _getRepeatIcon(),
+                          color: _getRepeatColor(),
+                        ),
+                        onPressed: onToggleRepeat,
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
     );
+  }
+
+  IconData _getRepeatIcon() {
+    return switch (repeatMode) {
+      RepeatMode.none => Icons.repeat,
+      RepeatMode.all => Icons.repeat,
+      RepeatMode.one => Icons.repeat_one,
+    };
+  }
+
+  Color _getRepeatColor() {
+    return switch (repeatMode) {
+      RepeatMode.none => Colors.grey,
+      RepeatMode.all => Colors.green,
+      RepeatMode.one => Colors.green,
+    };
   }
 
   Widget _buildAlbumArt() {

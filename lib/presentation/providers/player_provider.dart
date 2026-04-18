@@ -3,15 +3,20 @@ import '../../domain/entities/track.dart';
 import '../../domain/repositories/audio_player_repository.dart';
 import '../../data/services/audio_player_service.dart';
 
+enum RepeatMode { none, all, one }
+
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayerRepository _audioPlayer;
   Track? _currentTrack;
   List<Track> _playlist = [];
+  List<Track> _originalPlaylist = [];
   List<Playlist> _playlists = [];
   int _currentIndex = 0;
   Duration _position = Duration.zero;
   Duration? _duration;
   bool _isPlaying = false;
+  bool _isShuffleEnabled = false;
+  RepeatMode _repeatMode = RepeatMode.none;
 
   PlayerProvider({AudioPlayerRepository? audioPlayer})
       : _audioPlayer = audioPlayer ?? AudioPlayerService() {
@@ -40,11 +45,19 @@ class PlayerProvider extends ChangeNotifier {
   List<Track> get playlist => _playlist;
   List<Playlist> get playlists => _playlists;
   int get currentIndex => _currentIndex;
+  bool get isShuffleEnabled => _isShuffleEnabled;
+  RepeatMode get repeatMode => _repeatMode;
 
   Future<void> playTrack(Track track, {List<Track>? playlist, int? index}) async {
     if (playlist != null) {
-      _playlist = playlist;
-      _currentIndex = index ?? 0;
+      _originalPlaylist = playlist;
+      if (_isShuffleEnabled) {
+        _playlist = _shuffleList(playlist, index ?? 0);
+        _currentIndex = 0;
+      } else {
+        _playlist = playlist;
+        _currentIndex = index ?? 0;
+      }
     }
     _currentTrack = track;
     await _audioPlayer.play(track);
@@ -60,21 +73,77 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> next() async {
-    if (_playlist.isNotEmpty && _currentIndex < _playlist.length - 1) {
+    if (_playlist.isEmpty) return;
+    
+    if (_currentIndex < _playlist.length - 1) {
       _currentIndex++;
-      await playTrack(_playlist[_currentIndex]);
+    } else if (_repeatMode == RepeatMode.all) {
+      _currentIndex = 0;
+    } else if (_repeatMode == RepeatMode.one) {
+      _currentIndex = _currentIndex;
+    } else {
+      return;
     }
+    
+    await playTrack(_playlist[_currentIndex]);
   }
 
   Future<void> previous() async {
-    if (_playlist.isNotEmpty && _currentIndex > 0) {
-      _currentIndex--;
-      await playTrack(_playlist[_currentIndex]);
+    if (_playlist.isEmpty) return;
+    
+    if (_position.inSeconds > 3) {
+      await seek(Duration.zero);
+      return;
     }
+    
+    if (_currentIndex > 0) {
+      _currentIndex--;
+    } else if (_repeatMode == RepeatMode.all) {
+      _currentIndex = _playlist.length - 1;
+    } else {
+      return;
+    }
+    
+    await playTrack(_playlist[_currentIndex]);
   }
 
   Future<void> seek(Duration position) async {
     await _audioPlayer.seek(position);
+  }
+
+  void toggleShuffle() {
+    _isShuffleEnabled = !_isShuffleEnabled;
+    
+    if (_isShuffleEnabled) {
+      _playlist = _shuffleList(_originalPlaylist, _currentIndex);
+      _currentIndex = _playlist.indexWhere((t) => t.id == _currentTrack?.id);
+      if (_currentIndex == -1) _currentIndex = 0;
+    } else {
+      _currentIndex = _originalPlaylist.indexWhere((t) => t.id == _currentTrack?.id);
+      if (_currentIndex == -1) _currentIndex = 0;
+      _playlist = _originalPlaylist;
+    }
+    
+    notifyListeners();
+  }
+
+  void toggleRepeat() {
+    _repeatMode = switch (_repeatMode) {
+      RepeatMode.none => RepeatMode.all,
+      RepeatMode.all => RepeatMode.one,
+      RepeatMode.one => RepeatMode.none,
+    };
+    notifyListeners();
+  }
+
+  List<Track> _shuffleList(List<Track> tracks, int currentIndex) {
+    if (tracks.length <= 1) return tracks;
+    
+    final currentTrack = tracks[currentIndex];
+    final others = tracks.where((t) => t.id != currentTrack.id).toList();
+    others.shuffle();
+    
+    return [currentTrack, ...others];
   }
 
   void createPlaylist(Playlist playlist) {
