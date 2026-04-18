@@ -305,6 +305,15 @@ class _LibraryPageState extends State<LibraryPage> with SingleTickerProviderStat
                   player.addToFavorites(track);
                 }
               },
+              onAddToQueue: () {
+                player.addToQueue(track);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Adicionado à fila: ${track.title}'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
               onTap: () {
                 player.playTrack(
                   track,

@@ -8,6 +8,7 @@ class TrackTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
+  final VoidCallback? onAddToQueue;
 
   const TrackTile({
     super.key,
@@ -15,6 +16,7 @@ class TrackTile extends StatelessWidget {
     required this.onTap,
     this.isFavorite = false,
     this.onFavoriteToggle,
+    this.onAddToQueue,
   });
 
   @override
@@ -43,6 +45,11 @@ class TrackTile extends StatelessWidget {
                 color: isFavorite ? Colors.red : Colors.grey,
               ),
               onPressed: onFavoriteToggle,
+            ),
+          if (onAddToQueue != null)
+            IconButton(
+              icon: const Icon(Icons.queue_music, color: Colors.grey),
+              onPressed: onAddToQueue,
             ),
           const Icon(Icons.play_arrow, color: AppColors.primary),
         ],

@@ -59,6 +59,45 @@ class PlayHistory {
   List<Track> getRecent(int count) => tracks.take(count).toList();
 }
 
+class QueueManager {
+  final List<Track> queue;
+  
+  const QueueManager({this.queue = const []});
+  
+  QueueManager addToQueue(Track track) {
+    return QueueManager(queue: [...queue, track]);
+  }
+  
+  QueueManager addToQueueNext(Track track) {
+    return QueueManager(queue: [track, ...queue]);
+  }
+  
+  QueueManager removeFromQueue(String trackId) {
+    return QueueManager(
+      queue: queue.where((t) => t.id != trackId).toList(),
+    );
+  }
+  
+  QueueManager reorderQueue(int oldIndex, int newIndex) {
+    final newQueue = List<Track>.from(queue);
+    final item = newQueue.removeAt(oldIndex);
+    newQueue.insert(newIndex, item);
+    return QueueManager(queue: newQueue);
+  }
+  
+  QueueManager clearQueue() => const QueueManager();
+  
+  int get queueCount => queue.length;
+  
+  ({QueueManager queue, Track? track}) playNext() {
+    if (queue.isEmpty) {
+      return (queue: this, track: null);
+    }
+    final next = queue.first;
+    return (queue: removeFromQueue(next.id), track: next);
+  }
+}
+
 class PlayerProvider extends ChangeNotifier {
   final AudioPlayerRepository _audioPlayer;
   Track? _currentTrack;
@@ -67,6 +106,7 @@ class PlayerProvider extends ChangeNotifier {
   final List<Playlist> _playlists = [];
   PlayHistory _history = const PlayHistory();
   FavoritesManager _favorites = const FavoritesManager();
+  QueueManager _queue = const QueueManager();
   int _currentIndex = 0;
   Duration _position = Duration.zero;
   Duration? _duration;
@@ -103,6 +143,8 @@ class PlayerProvider extends ChangeNotifier {
   List<Track> get recentHistory => _history.getRecent(10);
   List<Track> get favorites => _favorites.favorites;
   int get favoriteCount => _favorites.favoriteCount;
+  List<Track> get queue => _queue.queue;
+  int get queueCount => _queue.queueCount;
   bool get currentTrackIsFavorite => _currentTrack != null && _favorites.isFavorite(_currentTrack!.id);
   int get currentIndex => _currentIndex;
   bool get isShuffleEnabled => _isShuffleEnabled;
@@ -134,7 +176,18 @@ class PlayerProvider extends ChangeNotifier {
   }
 
   Future<void> next() async {
-    if (_playlist.isEmpty) return;
+    if (_playlist.isEmpty) {
+      if (_queue.queue.isNotEmpty) {
+        final result = _queue.playNext();
+        _queue = result.queue;
+        if (result.track != null) {
+          _currentTrack = result.track;
+          await _audioPlayer.play(result.track!);
+          notifyListeners();
+        }
+      }
+      return;
+    }
     
     if (_currentIndex < _playlist.length - 1) {
       _currentIndex++;
@@ -142,6 +195,15 @@ class PlayerProvider extends ChangeNotifier {
       _currentIndex = 0;
     } else if (_repeatMode == RepeatMode.one) {
       _currentIndex = _currentIndex;
+    } else if (_queue.queue.isNotEmpty) {
+      final result = _queue.playNext();
+      _queue = result.queue;
+      if (result.track != null) {
+        _currentTrack = result.track;
+        await _audioPlayer.play(result.track!);
+        notifyListeners();
+        return;
+      }
     } else {
       return;
     }
@@ -221,6 +283,26 @@ class PlayerProvider extends ChangeNotifier {
 
   void removeFromFavorites(String trackId) {
     _favorites = _favorites.removeFavorite(trackId);
+    notifyListeners();
+  }
+
+  void addToQueue(Track track) {
+    _queue = _queue.addToQueue(track);
+    notifyListeners();
+  }
+
+  void addToQueueNext(Track track) {
+    _queue = _queue.addToQueueNext(track);
+    notifyListeners();
+  }
+
+  void removeFromQueue(String trackId) {
+    _queue = _queue.removeFromQueue(trackId);
+    notifyListeners();
+  }
+
+  void clearQueue() {
+    _queue = _queue.clearQueue();
     notifyListeners();
   }
 
